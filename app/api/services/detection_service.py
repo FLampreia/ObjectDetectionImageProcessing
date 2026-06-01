@@ -2,10 +2,10 @@ import cv2
 import numpy as np
 from fastapi import UploadFile
 
-from app.api.services.yolo_detector import detect
+from app.api.services.yolo_detector import detect, get_yolo_classes
 
 
-async def process_image(file: UploadFile):
+async def process_image(file: UploadFile, chosen_class_id: int | None = None):
 
     contents = await file.read()
 
@@ -13,14 +13,12 @@ async def process_image(file: UploadFile):
 
     image = cv2.imdecode(np_array, cv2.IMREAD_COLOR)
 
-    height, width = image.shape[:2]
-
-    detections = detect(image)
+    detections = detect(image, chosen_class_id)
 
     return {
         "filename": file.filename,
-        "height": height,
-        "width": width,
-        "detections": detections,
+        "detections": detections
     }
 
+def get_detection_classes():
+    return  get_yolo_classes()

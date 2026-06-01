@@ -1,14 +1,14 @@
 from pydantic import BaseModel
+from starlette.responses import FileResponse
 
 
 class Detection(BaseModel):
-    class_name: int
+    class_id: int
+    class_name: str
     confidence: float
     bbox: list[float]
 
 
 class DetectionResponse(BaseModel):
     filename: str
-    height: int
-    width: int
     detections: list[Detection]
