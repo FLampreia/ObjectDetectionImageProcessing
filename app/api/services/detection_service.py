@@ -1,3 +1,5 @@
+from typing import Optional
+
 import cv2
 import numpy as np
 from fastapi import UploadFile
@@ -5,7 +7,7 @@ from fastapi import UploadFile
 from app.api.services.yolo_detector import detect, get_yolo_classes
 
 
-async def process_image(file: UploadFile, chosen_class_id: int | None = None):
+async def process_image(file: UploadFile, chosen_class_id: Optional[list[int]] = None):
 
     contents = await file.read()
 

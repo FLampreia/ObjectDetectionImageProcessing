@@ -1,5 +1,6 @@
 from datetime import datetime
 import os
+from typing import Optional
 
 import torch
 from ultralytics import YOLO
@@ -42,11 +43,14 @@ def save_image(result):
         raise RuntimeError(f"Falha ao guardar imagem em {path}")
 
 
-def detect(image, chosen_class_id):
+def detect(image, chosen_class_ids: Optional[list[int]] = None):
 
     yolo_model = get_model()
 
-    results = yolo_model(image, classes=chosen_class_id)
+    if not chosen_class_ids:
+        chosen_class_ids = None
+
+    results = yolo_model(image, classes=chosen_class_ids)
 
     detections = []
 
