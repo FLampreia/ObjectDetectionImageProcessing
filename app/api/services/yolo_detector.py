@@ -27,32 +27,60 @@ def get_yolo_classes():
     yolo_model = get_model()
     return yolo_model.names
 
-def save_image(result):
+def save_image(result, area=None):
     """
-    Save image with bounding boxes
+    Save image with bounding boxes + optional ROI
     """
+
     filename = datetime.now().strftime("%Y%m%d_%H%M%S_%f") + ".jpg"
     path = os.path.join(SAVE_DIR, filename)
 
-    # result.plot() devolve a imagem anotada (numpy array)
     annotated_img = result.plot()
+
+    # Draw Area (ROI)
+    if area is not None:
+        x1, y1, x2, y2 = area
+
+        cv2.rectangle(
+            annotated_img,
+            (int(x1), int(y1)),
+            (int(x2), int(y2)),
+            (0, 0, 255),
+            2
+        )
+
+        cv2.putText(
+            annotated_img,
+            "ROI",
+            (int(x1), int(y1) - 10),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.6,
+            (0, 0, 255),
+            2
+        )
 
     success = cv2.imwrite(path, annotated_img)
 
     if not success:
         raise RuntimeError(f"Falha ao guardar imagem em {path}")
 
-
-def detect(image, chosen_class_ids: Optional[list[int]] = None):
+def detect(
+    image,
+    flg_save_image,
+    chosen_class_ids: Optional[list[int]] = None,
+    area: tuple[int, int, int, int] | None = None
+):
 
     yolo_model = get_model()
-
-    if not chosen_class_ids:
-        chosen_class_ids = None
 
     results = yolo_model(image, classes=chosen_class_ids)
 
     detections = []
+
+    # ROI Region of Interest
+    roi_x1 = roi_y1 = roi_x2 = roi_y2 = None
+    if area is not None:
+        roi_x1, roi_y1, roi_x2, roi_y2 = area
 
     for result in results:
 
@@ -61,6 +89,13 @@ def detect(image, chosen_class_ids: Optional[list[int]] = None):
 
             if conf <= Config.CONF_THRESHOLD:
                 continue
+
+            x1, y1, x2, y2 = map(float, box.xyxy[0])
+
+            if area is not None:
+                # Box needs to be inside Area
+                if x2 < roi_x1 or x1 > roi_x2 or y2 < roi_y1 or y1 > roi_y2:
+                    continue
 
             class_id = int(box.cls[0])
 
@@ -71,7 +106,7 @@ def detect(image, chosen_class_ids: Optional[list[int]] = None):
                 "bbox": box.xyxy[0].tolist(),
             })
 
-    save_image(results[0])
+    if flg_save_image: save_image(results[0], area)
 
     return detections
 

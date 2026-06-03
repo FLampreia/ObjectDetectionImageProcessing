@@ -11,4 +11,6 @@ class Detection(BaseModel):
 
 class DetectionResponse(BaseModel):
     filename: str
+    size_x: int
+    size_y: int
     detections: list[Detection]
