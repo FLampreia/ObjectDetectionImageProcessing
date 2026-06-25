@@ -3,33 +3,75 @@ from typing import Optional
 import cv2
 from fastapi import APIRouter, UploadFile, File, status, Query, Depends
 
+from app.api.core.deps import get_detection_service
 from app.api.model.detection import DetectionResponse
-from app.api.services.detection_service import process_image, get_detection_classes
+from app.api.services.detection_service import DetectionService
 
 detection_router = APIRouter()
 
 
-@detection_router.post("/detect/image", response_model=DetectionResponse, status_code=status.HTTP_200_OK)
+# @detection_router.post("/detect/image", response_model=DetectionResponse, status_code=status.HTTP_200_OK)
+# async def detect_image(
+#         file: UploadFile = File(...),
+#         flg_save_image: bool = Query(False), #TODO retirar a flag
+#         chosen_class_id: Optional[list[int]] = Query(default=None),
+#         area: Optional[tuple[int, int, int, int]] = Query(default=None),
+#
+# ):
+#     # result = await process_image(
+#     #     file,
+#     #     flg_save_image,
+#     #     chosen_class_id,
+#     #     area
+#     # )
+#     # return result
+#
+#     return "Cheguei"
+@detection_router.post("/detect/image", status_code=status.HTTP_200_OK)
 async def detect_image(
         file: UploadFile = File(...),
-        flg_save_image: bool = Query(False),
         chosen_class_id: Optional[list[int]] = Query(default=None),
-        area: Optional[tuple[int, int, int, int]] = Query(default=None),
-
+        detection_service: DetectionService = Depends(get_detection_service)
 ):
-    result = await process_image(
+    return await detection_service.process_image(
         file,
-        flg_save_image,
         chosen_class_id,
-        area
     )
-    return result
 
+
+@detection_router.get("/detect/models", status_code=status.HTTP_200_OK)
+def get_models(
+        detection_service: DetectionService = Depends(get_detection_service)
+):
+    return detection_service.get_models_overview()
 
 @detection_router.get("/detect/classes")
-def detection_classes():
-    return get_detection_classes()
-# @detection_router.po
+def detection_classes(
+        detection_service: DetectionService = Depends(get_detection_service)
+):
+    return detection_service.get_detection_classes()
+
+
+# @detection_router.post("/detect/video", response_model=DetectionResponse, status_code=status.HTTP_200_OK)
+# async def detect_video(
+#         file: UploadFile = File(...),
+#         flg_save_video: bool = Query(False),
+#         chosen_class_id: Optional[list[int]] = Query(default=None),
+#         area: Optional[tuple[int, int, int, int]] = Query(default=None)
+# ):
+#     result = await process_video(
+#         file,
+#         flg_save_video,
+#         chosen_class_id,
+#         area
+#     )
+#     return result
+#
+# # @detection_router.get("/detect/file")
+# # async def detect_file(
+# #         file: UploadFile = File(...),
+# #
+# # )
 
 # @detection_router.post("/detect/video", response_model=DetectionResponse, status_code=status.HTTP_200_OK)
 # async def detect_video():

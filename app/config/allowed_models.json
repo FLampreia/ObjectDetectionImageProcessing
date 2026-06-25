@@ -1,0 +1,21 @@
+{
+  "models": [
+    "yolo8n",
+    "yolo8s",
+    "yolo8m",
+    "yolo8l",
+    "yolo8x",
+
+    "yolo11n",
+    "yolo11s",
+    "yolo11m",
+    "yolo11l",
+    "yolo11x",
+
+    "yolo26n",
+    "yolo26s",
+    "yolo26m",
+    "yolo26l",
+    "yolo26x"
+  ]
+}

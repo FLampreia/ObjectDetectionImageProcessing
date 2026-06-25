@@ -14,3 +14,7 @@ class DetectionResponse(BaseModel):
     size_x: int
     size_y: int
     detections: list[Detection]
+
+class ModelInfo(BaseModel):
+    name: str
+    installed: bool
