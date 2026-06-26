@@ -4,10 +4,13 @@ import json
 import cv2
 import numpy as np
 from fastapi import UploadFile
+import httpx
+from ultralytics.utils.downloads import attempt_download_asset
 import tempfile
+from ultralytics import YOLO
 
 from app.api.core.config import Settings
-from app.api.services.yolo_detector import get_yolo_classes, detect_image, detect_video
+from app.api.services.yolo_detector import get_yolo_classes, detect_image
 
 
 class DetectionService:
@@ -70,6 +73,34 @@ class DetectionService:
             }
             for model in allowed
         ]
+
+
+    async def download_model(self, model_name: str):
+        model_path = self._installed_models_dir / f"{model_name}.pt"
+
+        # block repeated download
+        if model_path.exists():
+            return {
+                "status": "already_exists",
+                "model": model_name
+            }
+
+
+        url = f"https://github.com/ultralytics/assets/releases/download/v8.4.0/{model_name}.pt"
+
+        async with httpx.AsyncClient(follow_redirects=True, timeout=None) as client:
+            async with client.stream("GET", url) as response:
+                response.raise_for_status()
+
+                with open(model_path, "wb") as f:
+                    async for chunk in response.aiter_bytes():
+                        f.write(chunk)
+
+        return {
+            "status": "downloaded",
+            "model": model_name,
+            "path": str(model_path)
+        }
 
 # async def process_video(
 #         raw_video: UploadFile,

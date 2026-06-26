@@ -51,6 +51,12 @@ def detection_classes(
 ):
     return detection_service.get_detection_classes()
 
+@detection_router.post("/detect/models/{model_name}")
+async def download_model(
+        model_name: str,
+        detection_service: DetectionService = Depends(get_detection_service)
+):
+    return await detection_service.download_model(model_name)
 
 # @detection_router.post("/detect/video", response_model=DetectionResponse, status_code=status.HTTP_200_OK)
 # async def detect_video(

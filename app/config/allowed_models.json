@@ -1,10 +1,10 @@
 {
   "models": [
-    "yolo8n",
-    "yolo8s",
-    "yolo8m",
-    "yolo8l",
-    "yolo8x",
+    "yolov8n",
+    "yolov8s",
+    "yolov8m",
+    "yolov8l",
+    "yolov8x",
 
     "yolo11n",
     "yolo11s",
