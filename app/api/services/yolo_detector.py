@@ -6,6 +6,8 @@ import torch
 from ultralytics import YOLO
 import cv2
 
+from app.api.model.detection import ProcessingResponse
+
 model = None
 
 _model_cache = {}
@@ -35,12 +37,15 @@ def detect_image(
         chosen_class_ids: Optional[list[int]] = None,
 ):
     yolo_model = get_model(model_name)
-    print(chosen_class_ids)
+
     results = yolo_model(image, classes=chosen_class_ids)
 
     detections = []
+    processing_time = {}
 
     for result in results:
+        processing_time = result.speed
+
         for box in result.boxes:
             conf = float(box.conf[0])
             if conf <= conf_threshold:
@@ -57,7 +62,10 @@ def detect_image(
                 "bbox": [x1, y1, x2, y2],
             })
 
-    return detections
+    return ProcessingResponse(
+        detections=detections,
+        processing_time=sum(processing_time.values()),
+    )
 
 #
 # def detect_video(

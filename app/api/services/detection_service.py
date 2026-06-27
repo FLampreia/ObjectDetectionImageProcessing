@@ -37,6 +37,9 @@ class DetectionService:
 
         model_path = self._installed_models_dir / algorithm
 
+        if chosen_class_id:
+            chosen_class_id = [int(x) for x in chosen_class_id]
+
         detections = detect_image(
             image=image,
             chosen_class_ids=chosen_class_id,
@@ -48,7 +51,8 @@ class DetectionService:
             "filename": raw_image.filename,
             "size_x": image.shape[1],
             "size_y": image.shape[0],
-            "detections": detections
+            "processing_time_ms": detections.processing_time,
+            "detections": detections.detections,
         }
 
     def get_allowed_models_list(self) -> List[str]:

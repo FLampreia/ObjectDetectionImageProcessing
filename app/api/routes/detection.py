@@ -27,7 +27,7 @@ detection_router = APIRouter()
 #     # return result
 #
 #     return "Cheguei"
-@detection_router.post("/detect/image", status_code=status.HTTP_200_OK)
+@detection_router.post("/detect/image", status_code=status.HTTP_200_OK, response_model=DetectionResponse)
 async def detect_image(
         file: UploadFile = File(...),
         algorithm: str = Form(...),

@@ -13,7 +13,12 @@ class DetectionResponse(BaseModel):
     filename: str
     size_x: int
     size_y: int
+    processing_time_ms: float
     detections: list[Detection]
+
+class ProcessingResponse(BaseModel):
+    detections: list[Detection]
+    processing_time: float
 
 class ModelInfo(BaseModel):
     name: str
