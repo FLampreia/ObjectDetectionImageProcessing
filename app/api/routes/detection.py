@@ -1,7 +1,7 @@
 from typing import Optional
 
 import cv2
-from fastapi import APIRouter, UploadFile, File, status, Query, Depends
+from fastapi import APIRouter, UploadFile, File, status, Query, Depends, Form
 
 from app.api.core.deps import get_detection_service
 from app.api.model.detection import DetectionResponse
@@ -30,13 +30,34 @@ detection_router = APIRouter()
 @detection_router.post("/detect/image", status_code=status.HTTP_200_OK)
 async def detect_image(
         file: UploadFile = File(...),
-        chosen_class_id: Optional[list[int]] = Query(default=None),
+        algorithm: str = Form(...),
+        conf_threshold: float = Form(...),
+        chosen_class_id: list[str] | None = Form(None),
         detection_service: DetectionService = Depends(get_detection_service)
 ):
     return await detection_service.process_image(
-        file,
-        chosen_class_id,
+        raw_image=file,
+        chosen_class_id=chosen_class_id,
+        algorithm=algorithm,
+        conf_threshold=conf_threshold,
     )
+
+
+# @detection_router.post("/detect/image", status_code=status.HTTP_200_OK)
+# async def detect_image(
+#         file: UploadFile = File(...),
+#         algorithm: str = Form(...),
+#         conf_threshold: float = Form(...),
+#         chosen_class_id: list[int] | None = Form(None),
+#         detection_service: DetectionService = Depends(get_detection_service)
+# ):
+#     return await detection_service.process_image(
+#         raw_image=file,
+#         algorithm=algorithm,
+#         conf_threshold=conf_threshold,
+#         chosen_class_id=chosen_class_id,
+#     )
+
 
 
 @detection_router.get("/detect/models", status_code=status.HTTP_200_OK)
@@ -45,11 +66,13 @@ def get_models(
 ):
     return detection_service.get_models_overview()
 
+
 @detection_router.get("/detect/classes")
 def detection_classes(
         detection_service: DetectionService = Depends(get_detection_service)
 ):
     return detection_service.get_detection_classes()
+
 
 @detection_router.post("/detect/models/{model_name}")
 async def download_model(

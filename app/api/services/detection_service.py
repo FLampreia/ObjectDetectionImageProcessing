@@ -9,7 +9,6 @@ from ultralytics.utils.downloads import attempt_download_asset
 import tempfile
 from ultralytics import YOLO
 
-from app.api.core.config import Settings
 from app.api.services.yolo_detector import get_yolo_classes, detect_image
 
 
@@ -25,15 +24,25 @@ class DetectionService:
     async def process_image(
             self,
             raw_image: UploadFile,
-            chosen_class_id: list[int] | None = None,
+            algorithm: str,
+            conf_threshold: float,
+            chosen_class_id: list[str] | None = None,
     ):
+
         contents = await raw_image.read()
 
         np_array = np.frombuffer(contents, np.uint8)
 
         image = cv2.imdecode(np_array, cv2.IMREAD_COLOR)
 
-        detections = detect_image(image, chosen_class_id)
+        model_path = self._installed_models_dir / algorithm
+
+        detections = detect_image(
+            image=image,
+            chosen_class_ids=chosen_class_id,
+            conf_threshold=conf_threshold,
+            model_name=str(model_path)
+        )
 
         return {
             "filename": raw_image.filename,
@@ -74,7 +83,6 @@ class DetectionService:
             for model in allowed
         ]
 
-
     async def download_model(self, model_name: str):
         model_path = self._installed_models_dir / f"{model_name}.pt"
 
@@ -84,7 +92,6 @@ class DetectionService:
                 "status": "already_exists",
                 "model": model_name
             }
-
 
         url = f"https://github.com/ultralytics/assets/releases/download/v8.4.0/{model_name}.pt"
 

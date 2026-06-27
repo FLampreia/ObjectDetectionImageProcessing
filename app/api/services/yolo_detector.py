@@ -5,23 +5,22 @@ from typing import Optional
 import torch
 from ultralytics import YOLO
 import cv2
-from app.api.core.config import Config
 
 model = None
 
-SAVE_DIR = "images"
-os.makedirs(SAVE_DIR, exist_ok=True)
+_model_cache = {}
 
+def get_model(model_name: str | None = None):
+    global _model_cache
 
-def get_model():
-    global model
+    model_name = model_name
 
-    if model is None:
+    if model_name not in _model_cache:
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
-        model = YOLO(Config.YOLO_MODEL, verbose=False).to(device)
+        _model_cache[model_name] = YOLO(model_name, verbose=False).to(device)
 
-    return model
+    return _model_cache[model_name]
 
 
 def get_yolo_classes():
@@ -31,10 +30,12 @@ def get_yolo_classes():
 
 def detect_image(
         image,
+        conf_threshold: float = 0.8,
+        model_name: str = None,
         chosen_class_ids: Optional[list[int]] = None,
 ):
-    yolo_model = get_model()
-
+    yolo_model = get_model(model_name)
+    print(chosen_class_ids)
     results = yolo_model(image, classes=chosen_class_ids)
 
     detections = []
@@ -42,7 +43,7 @@ def detect_image(
     for result in results:
         for box in result.boxes:
             conf = float(box.conf[0])
-            if conf <= Config.CONF_THRESHOLD:
+            if conf <= conf_threshold:
                 continue
 
             x1, y1, x2, y2 = map(float, box.xyxy[0])
