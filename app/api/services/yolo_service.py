@@ -1,73 +1,72 @@
-from datetime import datetime
-import os
+from pathlib import Path
 from typing import Optional
 
 import torch
 from ultralytics import YOLO
-import cv2
 
 from app.api.model.detection import ProcessingResponse
-
-model = None
-
-_model_cache = {}
-
-def get_model(model_name: str | None = None):
-    global _model_cache
-
-    model_name = model_name
-
-    if model_name not in _model_cache:
-        device = "cuda" if torch.cuda.is_available() else "cpu"
-
-        _model_cache[model_name] = YOLO(model_name, verbose=False).to(device)
-
-    return _model_cache[model_name]
+from app.config.constants import MODELS_DIR
 
 
-def get_yolo_classes():
-    yolo_model = get_model()
-    return yolo_model.names
+class YoloService:
+    def __init__(self):
+        self._model_cache: dict[Path, YOLO] = {}
 
+    def get_model(self, model_name: str) -> YOLO:
+        model_path = MODELS_DIR / f"{model_name}.pt"
 
-def detect_image(
+        if model_path not in self._model_cache:
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+            self._model_cache[model_path] = YOLO(
+                str(model_path),
+                verbose=False,
+            ).to(device)
+
+        return self._model_cache[model_path]
+
+    def detect_image(
+        self,
         image,
+        model_name: str,
         conf_threshold: float = 0.8,
-        model_name: str = None,
         chosen_class_ids: Optional[list[int]] = None,
-):
-    yolo_model = get_model(model_name)
+    ) -> ProcessingResponse:
 
-    results = yolo_model(image, classes=chosen_class_ids)
+        yolo_model = self.get_model(model_name)
 
-    detections = []
-    processing_time = {}
+        results = yolo_model(
+            image,
+            classes=chosen_class_ids,
+        )
 
-    for result in results:
-        processing_time = result.speed
+        detections = []
+        processing_time = {}
 
-        for box in result.boxes:
-            conf = float(box.conf[0])
-            if conf <= conf_threshold:
-                continue
+        for result in results:
+            processing_time = result.speed
 
-            x1, y1, x2, y2 = map(float, box.xyxy[0])
-            class_id = int(box.cls[0])
+            for box in result.boxes:
+                confidence = float(box.conf[0])
 
+                if confidence < conf_threshold:
+                    continue
 
-            detections.append({
-                "class_id": class_id,
-                "class_name": yolo_model.names[class_id],
-                "confidence": conf,
-                "bbox": [x1, y1, x2, y2],
-            })
+                x1, y1, x2, y2 = map(float, box.xyxy[0])
+                class_id = int(box.cls[0])
 
-    return ProcessingResponse(
-        detections=detections,
-        processing_time=sum(processing_time.values()),
-    )
+                detections.append(
+                    {
+                        "class_id": class_id,
+                        "class_name": yolo_model.names[class_id],
+                        "confidence": confidence,
+                        "bbox": [x1, y1, x2, y2],
+                    }
+                )
 
-#
+        return ProcessingResponse(
+            detections=detections,
+            processing_time=sum(processing_time.values()),
+        )
 # def detect_video(
 #         video_path: str,
 #         flg_save_image,
@@ -133,19 +132,19 @@ def detect_image(
 #                             "tracked": track_id in tracked_ids
 #                         })
 
-                # Annotate frame with boxes and area
-                # annotated_frame = self.annotate_frame(detections, annotated_frame, mask)
+# Annotate frame with boxes and area
+# annotated_frame = self.annotate_frame(detections, annotated_frame, mask)
 
-                # Encode frame to JPEG
-                # if self.counting_event.is_set():
-                #     _, buffer = cv2.imencode('.jpg', annotated_frame)
-                # else:
-                #     _, buffer = cv2.imencode('.jpg', frame)
+# Encode frame to JPEG
+# if self.counting_event.is_set():
+#     _, buffer = cv2.imencode('.jpg', annotated_frame)
+# else:
+#     _, buffer = cv2.imencode('.jpg', frame)
 
-                # Optionally send text version if new detections
-                # if flag_new_detections:
-                #     jpg_as_text = base64.b64encode(buffer).decode('utf-8')
-                #     await websocket.send_text(jpg_as_text)
+# Optionally send text version if new detections
+# if flag_new_detections:
+#     jpg_as_text = base64.b64encode(buffer).decode('utf-8')
+#     await websocket.send_text(jpg_as_text)
 
-                # Send raw bytes to WebSocket
-                # await websocket.send_bytes(buffer.tobytes())
+# Send raw bytes to WebSocket
+# await websocket.send_bytes(buffer.tobytes())

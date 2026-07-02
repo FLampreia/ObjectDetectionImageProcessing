@@ -3,6 +3,5 @@ __pycache__/
 .idea/
 .idea
 idea/
-app/api/yolo/*
+app/yolo/*
 .env
-images
