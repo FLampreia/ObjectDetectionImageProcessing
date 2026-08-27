@@ -1,10 +1,11 @@
 from pathlib import Path
 from typing import Optional
 
+import cv2
 import torch
 from ultralytics import YOLO
 
-from app.api.model.detection import ProcessingResponse
+from app.api.model.detection import FrameProcessingResponse, Detection
 from app.config.constants import MODELS_DIR
 
 
@@ -24,17 +25,16 @@ class YoloService:
 
         return self._model_cache[model_path]
 
-    def detect_image(
-        self,
-        image,
-        model_name: str,
-        conf_threshold: float = 0.8,
-        chosen_class_ids: Optional[list[int]] = None,
-    ) -> ProcessingResponse:
 
-        yolo_model = self.get_model(model_name)
+    def detect(
+            self,
+            model: YOLO,
+            image,
+            conf_threshold: float = 0.8,
+            chosen_class_ids: Optional[list[int]] = None,
+    ) -> FrameProcessingResponse:
 
-        results = yolo_model(
+        results = model(
             image,
             classes=chosen_class_ids,
         )
@@ -55,18 +55,135 @@ class YoloService:
                 class_id = int(box.cls[0])
 
                 detections.append(
-                    {
-                        "class_id": class_id,
-                        "class_name": yolo_model.names[class_id],
-                        "confidence": confidence,
-                        "bbox": [x1, y1, x2, y2],
-                    }
+                    Detection(
+                        class_id=class_id,
+                        confidence=confidence,
+                        class_name=model.names[class_id],
+                        bbox=[x1, y1, x2, y2],
+                    )
                 )
 
-        return ProcessingResponse(
-            detections=detections,
-            processing_time=sum(processing_time.values()),
+        return FrameProcessingResponse(
+            processing_time_per_frame=sum(processing_time.values()),
+            detections_per_frame=detections,
         )
+
+    def track(
+            self,
+            model: YOLO,
+            image,
+            conf_threshold: float = 0.8,
+            chosen_class_ids: Optional[list[int]] = None,
+    ) -> FrameProcessingResponse:
+
+        results = model.track(
+            image,
+            persist=True,
+            classes=chosen_class_ids,
+            verbose=False,
+        )
+
+        detections = []
+        processing_time = {}
+
+        for result in results:
+            processing_time = result.speed
+
+            if result.boxes is None:
+                continue
+
+            for box in result.boxes:
+                confidence = float(box.conf[0])
+
+                if confidence < conf_threshold:
+                    continue
+
+                x1, y1, x2, y2 = map(float, box.xyxy[0])
+                class_id = int(box.cls[0])
+
+                track_id = None
+                if box.id is not None:
+                    track_id = int(box.id[0])
+
+                detections.append(
+                    Detection(
+                        track_id=track_id,
+                        class_id=class_id,
+                        confidence=confidence,
+                        class_name=model.names[class_id],
+                        bbox=[x1, y1, x2, y2],
+                    )
+                )
+
+        return FrameProcessingResponse(
+            processing_time_per_frame=sum(processing_time.values()),
+            detections_per_frame=detections,
+        )
+
+    # def draw_bboxes(
+    #         self,
+    #         image,
+    #         detections: list[Detection],
+    # ):
+    #     for detection in detections:
+    #         x1, y1, x2, y2 = map(int, detection.bbox)
+    #
+    #         label = f"{detection.class_name} {detection.confidence:.2f}"
+    #
+    #         # Bounding box
+    #         cv2.rectangle(
+    #             image,
+    #             (x1, y1),
+    #             (x2, y2),
+    #             (0, 255, 0),
+    #             2,
+    #         )
+    #
+    #         # Text size
+    #         (text_width, text_height), baseline = cv2.getTextSize(
+    #             label,
+    #             cv2.FONT_HERSHEY_SIMPLEX,
+    #             0.5,
+    #             1,
+    #         )
+    #
+    #         # Text background
+    #         cv2.rectangle(
+    #             image,
+    #             (x1, y1 - text_height - baseline - 4),
+    #             (x1 + text_width, y1),
+    #             (0, 255, 0),
+    #             -1,
+    #         )
+    #
+    #         # Text
+    #         cv2.putText(
+    #             image,
+    #             label,
+    #             (x1, y1 - baseline - 2),
+    #             cv2.FONT_HERSHEY_SIMPLEX,
+    #             0.5,
+    #             (0, 0, 0),
+    #             1,
+    #             cv2.LINE_AA,
+    #         )
+
+    # def detect_frame(
+    #         self,
+    #         model: YOLO,
+    #         image,
+    #         model_name: str,
+    #         conf_threshold: float = 0.8,
+    #         chosen_class_ids: Optional[list[int]] = None,
+    # ) -> ProcessingResponse:
+    #
+    #     results = model(
+    #         image,
+    #         classes=chosen_class_ids,
+    #     )
+    #
+    #
+
 # def detect_video(
 #         video_path: str,
 #         flg_save_image,
