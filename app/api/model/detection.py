@@ -6,13 +6,13 @@ class Detection(BaseModel):
     class_id: int
     class_name: str
     confidence: float
-    bbox: list[float]
+    bbox: list[int]
 
 class Area(BaseModel):
-    x1: float
-    y1: float
-    x2: float
-    y2: float
+    x1: int
+    y1: int
+    x2: int
+    y2: int
 
 # class DetectionResponse(BaseModel):
 #     processing_time_ms: float

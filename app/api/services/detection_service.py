@@ -74,11 +74,11 @@ class DetectionService:
         image_to_process = image
 
         if area is not None:
-            # Coordenadas já validadas e ordenadas.
-            left = int(area.x1 * width)
-            top = int(area.y1 * height)
-            right = int(area.x2 * width)
-            bottom = int(area.y2 * height)
+            #
+            left = max(0, min(width, min(area.x1, area.x2)))
+            right = max(0, min(width, max(area.x1, area.x2)))
+            top = max(0, min(height, min(area.y1, area.y2)))
+            bottom = max(0, min(height, max(area.y1, area.y2)))
 
             if right <= left or bottom <= top:
                 raise ValueError("Selected area is empty or invalid.")

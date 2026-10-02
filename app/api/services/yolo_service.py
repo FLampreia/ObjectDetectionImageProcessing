@@ -48,7 +48,7 @@ class YoloService:
         for box in results[0].boxes:
             confidence = float(box.conf[0])
 
-            x1, y1, x2, y2 = map(float, box.xyxy[0])
+            x1, y1, x2, y2 = map(int, box.xyxy[0])
             class_id = int(box.cls[0])
 
             detections.append(
@@ -100,7 +100,7 @@ class YoloService:
                 if confidence < conf_threshold:
                     continue
 
-                x1, y1, x2, y2 = map(float, box.xyxy[0])
+                x1, y1, x2, y2 = map(int, box.xyxy[0])
                 class_id = int(box.cls[0])
 
                 track_id = None
