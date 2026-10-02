@@ -37,34 +37,36 @@ class YoloService:
         results = model(
             image,
             classes=chosen_class_ids,
+            conf=conf_threshold,
+
         )
 
         detections = []
-        processing_time = {}
 
-        for result in results:
-            processing_time = result.speed
+        total_ms = sum(results[0].speed.values())
 
-            for box in result.boxes:
-                confidence = float(box.conf[0])
+        for box in results[0].boxes:
+            confidence = float(box.conf[0])
 
-                if confidence < conf_threshold:
-                    continue
+            x1, y1, x2, y2 = map(float, box.xyxy[0])
+            class_id = int(box.cls[0])
 
-                x1, y1, x2, y2 = map(float, box.xyxy[0])
-                class_id = int(box.cls[0])
-
-                detections.append(
-                    Detection(
-                        class_id=class_id,
-                        confidence=confidence,
-                        class_name=model.names[class_id],
-                        bbox=[x1, y1, x2, y2],
-                    )
+            detections.append(
+                Detection(
+                    class_id=class_id,
+                    confidence=confidence,
+                    class_name=model.names[class_id],
+                    bbox=[
+                        x1,
+                        y1,
+                        x2,
+                        y2
+                    ],
                 )
+            )
 
         return FrameProcessingResponse(
-            processing_time_per_frame=sum(processing_time.values()),
+            processing_time_per_frame=total_ms,
             detections_per_frame=detections,
         )
 

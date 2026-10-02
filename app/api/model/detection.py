@@ -8,6 +8,12 @@ class Detection(BaseModel):
     confidence: float
     bbox: list[float]
 
+class Area(BaseModel):
+    x1: float
+    y1: float
+    x2: float
+    y2: float
+
 # class DetectionResponse(BaseModel):
 #     processing_time_ms: float
 #     detections: list[Detection]

@@ -5,8 +5,8 @@ import cv2
 import numpy as np
 from fastapi import APIRouter, UploadFile, File, status, Query, Depends, Form, WebSocket, WebSocketDisconnect
 
-from app.api.core.deps import get_detection_service, get_model_service, get_socket_service
-from app.api.model.detection import FrameProcessingResponse
+from app.api.core.deps import get_detection_service, get_model_service, get_socket_service, parse_area
+from app.api.model.detection import FrameProcessingResponse, Area
 from app.api.services.detection_service import DetectionService
 from app.api.services.socket_service import SocketService
 
@@ -19,6 +19,7 @@ async def detect_image(
         algorithm: str = Form(...),
         conf_threshold: float = Form(...),
         chosen_class_id: list[str] | None = Form(None),
+        area: Area | None = Depends(parse_area),
         detection_service: DetectionService = Depends(get_detection_service)
 ):
     return await detection_service.process_image_upload(
@@ -26,6 +27,7 @@ async def detect_image(
         chosen_class_id=chosen_class_id,
         algorithm=algorithm,
         conf_threshold=conf_threshold,
+        area=area
     )
 
 

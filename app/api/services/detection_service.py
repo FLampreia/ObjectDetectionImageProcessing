@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 from fastapi import UploadFile
 
-from app.api.model.detection import FrameProcessingResponse
+from app.api.model.detection import FrameProcessingResponse, Area
 from app.api.services.yolo_service import YoloService
 
 
@@ -53,6 +53,7 @@ class DetectionService:
             algorithm: str,
             conf_threshold: float,
             chosen_class_id: list[int] | None = None,
+            area: Area | None = None
     ):
         # Read uploaded Image
         contents = await raw_image.read()
@@ -69,8 +70,23 @@ class DetectionService:
         # Load the model
         yolo_model = self._yolo_service.get_model(algorithm)
 
+        height, width = image.shape[:2]
+        image_to_process = image
+
+        if area is not None:
+            # Coordenadas já validadas e ordenadas.
+            left = int(area.x1 * width)
+            top = int(area.y1 * height)
+            right = int(area.x2 * width)
+            bottom = int(area.y2 * height)
+
+            if right <= left or bottom <= top:
+                raise ValueError("Selected area is empty or invalid.")
+
+            image_to_process = image[top:bottom, left:right]
+
         return self.process_frame(
-            image=image,
+            image=image_to_process,
             yolo_model=yolo_model,
             conf_threshold=conf_threshold,
             chosen_class_id=chosen_class_id,
