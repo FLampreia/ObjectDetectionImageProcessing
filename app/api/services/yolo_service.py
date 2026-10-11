@@ -25,6 +25,14 @@ class YoloService:
 
         return self._model_cache[model_path]
 
+    def create_tracking_model(self, model_name: str) -> YOLO:
+        # Each socket needs its own persistent tracker.
+        model_path = MODELS_DIR / f"{model_name}.pt"
+        if model_path.parent.resolve() != MODELS_DIR.resolve() or not model_path.is_file():
+            raise ValueError("Model is unavailable")
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        return YOLO(str(model_path), verbose=False).to(device)
+
 
     def detect(
             self,

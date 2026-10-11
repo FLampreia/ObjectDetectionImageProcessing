@@ -14,6 +14,9 @@ class DetectionService:
     def get_model(self, algorithm: str):
         return self._yolo_service.get_model(algorithm)
 
+    def create_tracking_model(self, algorithm: str):
+        return self._yolo_service.create_tracking_model(algorithm)
+
     # async def process_image(
     #         self,
     #         raw_image: UploadFile,
@@ -74,7 +77,7 @@ class DetectionService:
         image_to_process = image
 
         if area is not None:
-            #
+            # Calculate and order the coordinates of the selected area, from top left to bottom right
             left = max(0, min(width, min(area.x1, area.x2)))
             right = max(0, min(width, max(area.x1, area.x2)))
             top = max(0, min(height, min(area.y1, area.y2)))
