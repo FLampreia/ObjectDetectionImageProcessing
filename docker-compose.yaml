@@ -1,0 +1,11 @@
+services:
+  worker:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "${WORKER_BIND_HOST:-127.0.0.1}:${WORKER_PORT:-8001}:8001"
+    volumes:
+      - worker_models:/app/app/yolo
+
+volumes:
+  worker_models:

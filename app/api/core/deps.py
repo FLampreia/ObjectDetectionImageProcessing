@@ -5,8 +5,8 @@ from app.api.model.detection import Area
 from app.api.services.detection_service import DetectionService
 from app.api.services.model_service import ModelService
 
-# Centralizar a criação de dependências para acada vez q é chamado um endpoint
-# nao ser criada uma instancia de cada serviço
+# todo Centralizar a criação de dependências para acada vez q é chamado um endpoint
+#   nao ser criada uma instancia de cada serviço
 
 
 model_service = ModelService()
