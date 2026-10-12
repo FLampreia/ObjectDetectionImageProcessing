@@ -5,3 +5,6 @@ __pycache__/
 idea/
 app/yolo/*
 .env
+tmp/
+docker/wheels/*
+!docker/wheels/.gitkeep

@@ -1,0 +1,14 @@
+.git/
+.venv/
+venv/
+.idea/
+.env
+.env.*
+__pycache__/
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+tests/
+tmp/
+docker/wheels/
+*.log
