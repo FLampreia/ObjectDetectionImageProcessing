@@ -11,6 +11,7 @@ from fastapi import APIRouter, UploadFile, File, status, Query, Depends, Form, W
 from app.api.core.deps import get_detection_service, get_model_service, parse_area
 from app.api.model.detection import FrameProcessingResponse, Area
 from app.api.services.detection_service import DetectionService
+from app.api.services.line_crossing import LineCrossingTracker
 
 detection_router = APIRouter()
 
@@ -78,6 +79,8 @@ async def video_detect_websocket(
             raise ValueError("Invalid confidence threshold")
         chosen_class_id = parameters.get("chosen_class_id")
         area = parameters.get("area")
+        line = parameters.get("line")
+        crossing_tracker = LineCrossingTracker(line) if line is not None else None
 
         # Load the model
         yolo_model = await run_in_threadpool(detection_service.create_tracking_model, algorithm)
@@ -104,8 +107,19 @@ async def video_detect_websocket(
                 np.frombuffer(image_bytes, np.uint8),
                 cv2.IMREAD_COLOR,
             )
+
             if image is None:
                 raise ValueError("Invalid image frame")
+
+            height, width = image.shape[:2]
+            if line is not None and not all(
+                0 <= line[x] <= width and 0 <= line[y] <= height
+                for x, y in (("x1", "y1"), ("x2", "y2"))
+            ):
+                raise ValueError("Counting line is outside the frame")
+
+            offset = (0, 0)
+
             if area is not None:
                 left, right = sorted([int(area["x1"]), int(area["x2"])])
                 top, bottom = sorted([int(area["y1"]), int(area["y2"])])
@@ -113,6 +127,7 @@ async def video_detect_websocket(
                 if not (0 <= left < right <= width and 0 <= top < bottom <= height):
                     raise ValueError("Selected area is outside the frame")
                 image = image[top:bottom, left:right]
+                offset = (left, top)
 
             response = await run_in_threadpool(
                 detection_service.process_frame,
@@ -126,6 +141,8 @@ async def video_detect_websocket(
             await websocket.send_json({
                 **response.model_dump(),
                 "frame_number": message["frame_number"],
+                "crossings": crossing_tracker.update(response.detections_per_frame, message["timestamp_ms"], offset)
+                if crossing_tracker else [],
             })
 
         # Confirm to client that have finished
